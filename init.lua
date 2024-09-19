@@ -613,15 +613,15 @@ require('lazy').setup({
           staticcheck = true,
           gofumpt = true,
         },
-        -- pyright = {},
-        -- rust_analyzer = {},
+        pyright = {},
+        rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
-        -- ts_ls = {},
+        ts_ls = {},
         --
 
         lua_ls = {
@@ -751,6 +751,19 @@ require('lazy').setup({
       'hrsh7th/cmp-path',
     },
     config = function()
+      -- Define a variable to toggle cmp
+      vim.g.cmp_enabled = true
+
+      -- Create a function to disable nvim-cmp when pressing Backspace
+      local function disable_cmp_on_backspace()
+        vim.g.cmp_enabled = false
+      end
+
+      -- Create a function to enable nvim-cmp when typing
+      local function enable_cmp_on_any_key()
+        vim.g.cmp_enabled = true
+      end
+
       -- See `:help cmp`
       local cmp = require 'cmp'
       local luasnip = require 'luasnip'
@@ -769,6 +782,12 @@ require('lazy').setup({
         --
         -- No, but seriously. Please read `:help ins-completion`, it is really good!
         mapping = cmp.mapping.preset.insert {
+          -- Disable nvim-cmp on Backspace
+          ['<BS>'] = cmp.mapping(function(fallback)
+            disable_cmp_on_backspace()
+            fallback() -- continue with the default behavior of Backspace
+          end, { 'i', 's' }),
+
           -- Select the [n]ext item
           -- ['<C-n>'] = cmp.mapping.select_next_item(),
           -- Select the [p]revious item
@@ -788,7 +807,7 @@ require('lazy').setup({
           ['<CR>'] = cmp.mapping.confirm { select = true },
           ['<Tab>'] = cmp.mapping.select_next_item(),
           ['<S-Tab>'] = cmp.mapping.select_prev_item(),
-          ['<BS>'] = cmp.mapping.abort(),
+          -- ['<BS>'] = cmp.mapping.abort(),
 
           -- Manually trigger a completion from nvim-cmp.
           --  Generally you don't need this, because nvim-cmp will display
@@ -828,6 +847,11 @@ require('lazy').setup({
           { name = 'path' },
         },
       }
+      -- Autocommand to enable cmp on any character input
+      vim.api.nvim_create_autocmd('InsertCharPre', {
+        pattern = '*',
+        callback = enable_cmp_on_any_key,
+      })
     end,
   },
 
