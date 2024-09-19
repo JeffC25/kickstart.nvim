@@ -754,17 +754,15 @@ require('lazy').setup({
       -- Define a variable to toggle cmp
       vim.g.cmp_enabled = true
 
-      -- Create a function to disable nvim-cmp when pressing Backspace
-      local function disable_cmp_on_backspace()
+      -- Function to disable nvim-cmp
+      local function disable_cmp()
         vim.g.cmp_enabled = false
       end
 
-      -- Create a function to enable nvim-cmp when typing
-      local function enable_cmp_on_any_key()
+      -- Function to enable nvim-cmp
+      local function enable_cmp()
         vim.g.cmp_enabled = true
       end
-
-      -- See `:help cmp`
       local cmp = require 'cmp'
       local luasnip = require 'luasnip'
       luasnip.config.setup {}
@@ -775,6 +773,9 @@ require('lazy').setup({
             luasnip.lsp_expand(args.body)
           end,
         },
+        enabled = function()
+          return vim.g.cmp_enabled
+        end,
         completion = { completeopt = 'menu,menuone,noinsert' },
 
         -- For an understanding of why these mappings were
@@ -782,12 +783,17 @@ require('lazy').setup({
         --
         -- No, but seriously. Please read `:help ins-completion`, it is really good!
         mapping = cmp.mapping.preset.insert {
-          -- Disable nvim-cmp on Backspace
+          -- Backspace mapping to abort if suggestions are visible, otherwise normal backspace behavior
           ['<BS>'] = cmp.mapping(function(fallback)
-            disable_cmp_on_backspace()
-            fallback() -- continue with the default behavior of Backspace
+            if cmp.visible() then
+              -- Abort completion if suggestions are visible
+              cmp.abort()
+            elseif not cmp.visible() then
+              -- Disable nvim-cmp if there are no suggestions
+              disable_cmp()
+              fallback() -- Continue normal backspace behavior
+            end
           end, { 'i', 's' }),
-
           -- Select the [n]ext item
           -- ['<C-n>'] = cmp.mapping.select_next_item(),
           -- Select the [p]revious item
@@ -848,9 +854,10 @@ require('lazy').setup({
         },
       }
       -- Autocommand to enable cmp on any character input
+
       vim.api.nvim_create_autocmd('InsertCharPre', {
         pattern = '*',
-        callback = enable_cmp_on_any_key,
+        callback = enable_cmp,
       })
     end,
   },
